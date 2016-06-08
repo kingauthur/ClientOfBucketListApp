@@ -162,7 +162,7 @@ angular.module('bucketList.controllers', ['bucketList.services'])
             $rootScope.notify("Oops something went wrong!! Please try again later");
         });
     });
-
+    
 
     $rootScope.$broadcast('fetchCompleted');
 
