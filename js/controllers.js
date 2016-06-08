@@ -1,38 +1,40 @@
-angular.module('bucketList.controllers', ['bucketLists.services'])
+angular.module('bucketList.controllers', ['bucketList.services'])
 
-.controller('SignInCtrl', function($rootScope, @scope, API, $window) {
-
-    if($rootScope.isSessionActive()) {
-      $window.location.href = ('#/bucket/list');
+.controller('SignInCtrl', function ($rootScope, $scope, API, $window) {
+    // if the user is already logged in, take him to his bucketlist
+    if ($rootScope.isSessionActive()) {
+        $window.location.href = ('#/bucket/list');
     }
 
     $scope.user = {
-      email: "",
-      password: ""
+        email: "",
+        password: ""
     };
 
-    $scope.validateUser = function() {
-      var email = this.user.email;
-      var password = this.user.password;
-      if (!email || !password) {
-          $rootSFcope.notify("please enter valid Credentials");
-          return false;
-      }
-      $rootScope.show("Please wait.. Authenticating");
-      API.signin({
-        email: email,
-        password: password}).success(function(data){
-          $rootScope.setToken(email);
-          $rootScope.hide();
-          $window.location.href = ('#/bucket/list');
+    $scope.validateUser = function () {
+        var email = this.user.email;
+        var password = this.user.password;
+        if(!email || !password) {
+        	$rootScope.notify("Please enter valid credentials");
+        	return false;
+        }
+        $rootScope.show('Please wait.. Authenticating');
+        API.signin({
+            email: email,
+            password: password
+        }).success(function (data) {
+            $rootScope.setToken(email); // create a session kind of thing on the client side
+            $rootScope.hide();
+            $window.location.href = ('#/bucket/list');
         }).error(function (error) {
-          $rootScope.hide();
-          $rootScope.notify("Invalid username or password");
+            $rootScope.hide();
+            $rootScope.notify("Invalid Username or password");
         });
     }
+
 })
 
-.controller('SignUpCtrl', function($rootScope, $scope, API, $window) {
+.controller('SignUpCtrl', function ($rootScope, $scope, API, $window) {
     $scope.user = {
         email: "",
         password: "",
@@ -40,89 +42,105 @@ angular.module('bucketList.controllers', ['bucketLists.services'])
     };
 
     $scope.createUser = function () {
-        var email = this.user.email;
+    	var email = this.user.email;
         var password = this.user.password;
         var uName = this.user.name;
-        if (!email || !password || uName) {
-          $rootScope.notify("Please enter valid data");
-          return false;
+        if(!email || !password || !uName) {
+        	$rootScope.notify("Please enter valid data");
+        	return false;
         }
-        $rootScope.show("Please wait.. Registering");
+        $rootScope.show('Please wait.. Registering');
         API.signup({
             email: email,
             password: password,
             name: uName
-        }).success(function (data){
-            $rootScope.setToken(email);
+        }).success(function (data) {
+            $rootScope.setToken(email); // create a session kind of thing on the client side
             $rootScope.hide();
             $window.location.href = ('#/bucket/list');
-        }).error(function (error){
+        }).error(function (error) {
             $rootScope.hide();
-            if(error.error && error.error.code == 11000) {
-                $rootScope.notify("A user with this email already exists");
-            } else {
-                $rootScope.notify("Oops something went wrong, Please try again!");
-            }
+        	if(error.error && error.error.code == 11000)
+        	{
+        		$rootScope.notify("A user with this email already exists");
+        	}
+        	else
+        	{
+        		$rootScope.notify("Oops something went wrong, Please try again!");
+        	}
+
         });
     }
 })
 
-.controller("myListCtrl",function ($rootScope, $scope, API, $timeout, $ionicModal, $window){
-    $rootScope.$on('fetchAll',function(){
-        // TODO 为什么这里的success和error方法的参数和上面的都不一样
-        API.getAll($rootScope.getToken()).success(function (data, status, headers, config){
-          $rootScope.show("Please wait....Processing");
-          $scope.list = [];
-          for (var i = 0; i < data.length; i++) {
-              if(data[i].isCompleted == false) {
-                $scope.list.push(data[i]);
-              }
-          };
-          if ($scope.list.length == 0) {
-              $scope.noData = true;
-          } else {
-              $scope.noData = false;
-          }
+.controller('myListCtrl', function ($rootScope, $scope, API, $timeout, $ionicModal, $window) {
+    $rootScope.$on('fetchAll', function(){
+            API.getAll($rootScope.getToken()).success(function (data, status, headers, config) {
+            $rootScope.show("Please wait... Processing");
+            $scope.list = [];
+            for (var i = 0; i < data.length; i++) {
+                if (data[i].isCompleted == false) {
+                    $scope.list.push(data[i]);
+                }
+            };
+            if($scope.list.length == 0)
+            {
+                $scope.noData = true;
+            }
+            else
+            {
+                $scope.noData = false;
+            }
 
-          $ionicModal.fromTemplateUrl('templates/newItem.html', function(modal) {
-              $scope.newTemplate = modal;
-          });
+            $ionicModal.fromTemplateUrl('templates/newItem.html', function (modal) {
+                $scope.newTemplate = modal;
+            });
 
-          $scope.newTask = function() {
-              $scope.newTemplate.show();
-          };
-          rootScope.hide();
-        }).error(function (data, status, headers. config){
-          $rootScope.hide();
-          $rootScope.notify("Oops something went wrong!! Please try again later");
+            $scope.newTask = function () {
+                $scope.newTemplate.show();
+            };
+            $rootScope.hide();
+        }).error(function (data, status, headers, config) {
+            $rootScope.hide();
+            $rootScope.notify("Oops something went wrong!! Please try again later");
         });
-    })
+    });
 
     $rootScope.$broadcast('fetchAll');
 
     $scope.markCompleted = function (id) {
-        $rootScope.show("Please wait....Updating List");
-        API.putItem(id, {isCompleted: true}, $rootScope.getToken()).success(function(data, status, headers, config){
-            $rootScope.hide();
-            $rootScope.doRefresh(1);
-        }).error(function (data, status, headers, config) {
-            $rootScope.hide();
-            $rootScope.notify("Oops something went wrong!! Please try again later")
-        });
+        $rootScope.show("Please wait... Updating List");
+        API.putItem(id, {
+            isCompleted: true
+        }, $rootScope.getToken())
+            .success(function (data, status, headers, config) {
+                $rootScope.hide();
+                $rootScope.doRefresh(1);
+            }).error(function (data, status, headers, config) {
+                $rootScope.hide();
+                $rootScope.notify("Oops something went wrong!! Please try again later");
+            });
     };
 
-    $scope.deleteItem() = function (id) {
-        $rootScope.show("Please wait....Deleteing from List");
-        API.deleteItem(id, $rootScope.getToken()).success(function (data, status,headers,config){
-            $rootScope.hide();
-            $rootScope.notify("Oops something went wrong!! Please try again later");
-        });
+
+
+    $scope.deleteItem = function (id) {
+        $rootScope.show("Please wait... Deleting from List");
+        API.deleteItem(id, $rootScope.getToken())
+            .success(function (data, status, headers, config) {
+                $rootScope.hide();
+                $rootScope.doRefresh(1);
+            }).error(function (data, status, headers, config) {
+                $rootScope.hide();
+                $rootScope.notify("Oops something went wrong!! Please try again later");
+            });
     };
+
 })
 
 .controller('completedCtrl', function ($rootScope, $scope, API, $window){
     $rootScope.$on('fetchCompleted', function(){
-        API.getAll($rootScope.getToken()).success(function(data, status, headers, config){
+        API.getAll($rootScope.getToken()).success(function (data, status, headers, config){
             $scope.list = [];
             for (var i = 0; i < data.length; i++) {
                 if(data[i].isCompleted == true) {
@@ -143,21 +161,21 @@ angular.module('bucketList.controllers', ['bucketLists.services'])
         }).error(function (data, status, headers, config) {
             $rootScope.notify("Oops something went wrong!! Please try again later");
         });
-    })；
+    });
+
 
     $rootScope.$broadcast('fetchCompleted');
 
     $scope.deleteItem = function (id) {
         $rootScope.show("Please wait... Delete from List");
-        API.deleteItem(id, $rootScope.getToken()).success(function(data, status, headers,config){
+        API.deleteItem(id, $rootScope.getToken()).success(function(data, status, headers,config) {
             $rootScope.hide();
             $rootScope.doRefresh(2);
         }).error(function (data, status, headers, config) {
             $rootScope.hide();
-            $rootScope.notify("Oops something went wrong!! Please try again later")
-        })
-    }
-
+            $rootScope.notify("Oops something went wrong!! Please try again later");
+        });
+    };
 })
 
 
@@ -195,4 +213,4 @@ angular.module('bucketList.controllers', ['bucketLists.services'])
             $rootScope.notify("Oops something went wrong!! Please try again later");
         });
     };
-});
+})
